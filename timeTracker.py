@@ -1,49 +1,72 @@
 #!C:\Users\py_venv\venv_ttracker\Scripts\python.exe
 from os import listdir
-import pyautogui
+import platform
+# import pyautogui
 from pynput import mouse, keyboard
 import sqlite3
+import logging
 import time
-from paramiko import SSHClient
-from paramiko import RSAKey
+import win32gui
+import socket
+import win32process
+# from paramiko import SSHClient
+# from paramiko import RSAKey
 from datetime import datetime
 import atexit
 import re
-print('monitoring started')
-# for i in dir(pyautogui):
-#     print(i)
-os.
+
+# with open(log_file, "w"):
+#     pass
+
+c_name = socket.gethostname()
+log_file = f"ttracker-{c_name}.log"
+def write_log(info):
+    with open(log_file, "a") as f:
+        f.write(str(f"\n{info}"))
 
 
-class Tracked:
-    """this class will contain information on the file tracked"""
-    def __init__(self,file, prog):
-        pass
+def get_os():
+    system = platform.system()
+    if system == 'Windows':
+        os = "win"
+    else:
+        os = "mac"
+    return os
 
-class writer:
-    def __init__(self):
-        pass
+
+
+os = get_os()
+
+if os == 'win':
+
+    projects = listdir('G:\My Drive\PLICO_CLOUD\PROJECTS')
+    archive = listdir('G:\My Drive\PLICO_ARCHIVE')
+else:
+    pass
+folders = projects + archive
+
+now = datetime.now()
+write_log(f'monitoring started at {now}')
 class Tracker:
 
     """contains all pertaining to tracker & timer"""
-    commit_interval = 1/30
-    inactive_cap = 0
-    interrupt_delay = 1/60# must be smaller than commit interval
+    commit_interval = 10
+    inactive_cap = 5
+    interrupt_delay = 1# must be smaller than commit interval
     survey_interval = 5 # interval at which the project folder is checked for updates
 
     def __init__(self):
-        self.conn = sqlite3.connect('timeTracker.sqlite')
-        self.conn.set_trace_callback(print)
+        self.conn = sqlite3.connect(r'F:\Dropbox\_Programming\timeTracker\timeTracker-{}.sqlite'.format(c_name))
+        # self.conn.set_trace_callback(print)
         self.cur = self.conn.cursor()
         self.cur.execute('''CREATE TABLE IF NOT EXISTS Time 
             (id INTEGER PRIMARY KEY UNIQUE, 
             project_id TEXT,
             date TEXT,
             start TEXT,
-            end TEXT,
             time INTEGER,
             serial TEXT UNIQUE,
-            CONSTRAINT unq UNIQUE (project_id, start, end)) ''')
+            CONSTRAINT unq UNIQUE (project_id, start)) ''')
 
 
         self.latest_tracked = None
@@ -59,7 +82,7 @@ class Tracker:
         self.win_name = ''
         self.proj_id = []
         self.start = ''
-        self.end = ''
+
         self.process_current_time = 0
         self.sql_insert = 'INSERT OR IGNORE INTO Time (project_id, start, date, time, serial) VALUES ( ?, ?, ?, ?, 0, ?)'
           # in minutes
@@ -84,53 +107,49 @@ class Tracker:
             return False
 
 
-    def sql_command(self, type):
+    def write_sql(self):
 
         date = str(datetime.now().date())
-        match = (self.projectNum, self.start, date)
-        serial = f'{self.projectNum}-{date}-{self.start}'
-        skip = False
-        if type == 'end':
-            match = (self.latest_tracked, self.start, date)
-            string = f", end = {self.end}"
+        match = (self.projectNum, date)
+        serial = f'{self.projectNum}-{date}'
 
-        elif type == 'new':
+        find_cmd = f"SELECT * FROM Time WHERE project_id = ? And date = ? ;"
+        crit = (self.projectNum, date)
+        self.cur.execute(find_cmd, crit)
+        entry = self.cur.fetchone()
+
+        if entry:
+
+            cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
+            self.cur.execute(cmd, match)
+        else:
             self.cur.execute(
                 'INSERT OR IGNORE INTO Time (project_id, start, date, time, serial) VALUES ( ?, ?, ?, 0,?)',
                 (self.projectNum, self.start, date, serial))
-            string = ''
-            skip = True
-        else:
-            string = ''
-        if not skip:
-            cmd = f'''UPDATE Time SET time = time + {self.process_time}{string} WHERE project_id = ? And start = ? And date = ?;'''
-            self.cur.execute(cmd, match)
-
 
         self.conn.commit()
         self.process_time = 0
 
+
     def sql_commit_handler(self, title):
-        # print(self.projectNum, title)
+
         if self.projectNum == 0:
             pass
         else:
             if self.interrupt:
                 print('committed {} seconds by interrupt'.format(self.process_time))
-                self.end = re.sub('[:.]', '-', str(datetime.now().time()))
-                self.process_time = self.interrupt_time
-                self.sql_command('end')
                 self.start = re.sub('[:.]', '-', str(datetime.now().time()))
+                self.process_time = self.interrupt_time
                 self.process_current_time = 0
                 self.interrupt_time = 0
-                self.sql_command('new')
+                self.write_sql()
 
 
 
                 # self.interrupt = False
 
             elif self.projectNum == title:
-                print('process time is now {}'.format(self.process_time))
+                # print('process time is now {}'.format(self.process_time))
                 if self.process_current_time == 0:
                     self.start = re.sub('[:.]', '-', str(datetime.now().time()))
                 self.process_current_time += 1
@@ -139,15 +158,13 @@ class Tracker:
                     print('committed {} sec on scheduled interval'.format(self.process_time))
                     if self.process_current_time <= self.commit_interval*60:
                         print('new')
-                        self.sql_command('new')
+                        self.write_sql()
                     else:
                         # print(f'pct: {self.process_current_time}')
-                        self.sql_command('')
+                        self.write_sql()
 
             else:
                 pass
-
-
 
             date_time = time.time()
             self.timestamp[title] = int(date_time)
@@ -183,9 +200,8 @@ class Tracker:
             #     print(f'will interrupt in{self.interrupt_delay-self.interrupt_time} sec')
 
     def survey_project_folder(self):
-        projects = listdir('G:\My Drive\PLICO_CLOUD\PROJECTS')
-        archive = listdir('G:\My Drive\PLICO_ARCHIVE')
-        folders = projects + archive
+
+
         proj_num = []
         for i in folders:
             try:
@@ -208,9 +224,10 @@ class Tracker:
 
                 if self.process_time > 1:
                     self.end = re.sub('[:.]', '-', str(datetime.now().time()))
-                    self.sql_command('end')
+                    self.write_sql()
                 else:
-
+                    self.current_project = ''
+                    self.projectNum = 0
                     self.process_time = 0
         return value
 
@@ -228,13 +245,22 @@ class Tracker:
         else:
             return False
 
+
+
+    def win_title(self):
+        hwnd = win32gui.GetForegroundWindow()
+        win_name = win32gui.GetWindowText(hwnd)
+        return win_name
+
+    def mac_title(self):
+        pass
     def track(self):
 
         while True:
-
-            win_name = pyautogui.getActiveWindowTitle()
-
-
+            if os == "win":
+                win_name = self.win_title()
+            else:
+                win_name = self.mac_title()
 
             try:
                 starts = re.findall('\d+[\s_-]', win_name)
@@ -272,33 +298,22 @@ class Tracker:
 
 
 
-    def exit_update(self):
-        print('updating db before closing with {} - {}'.format(self.projectNum, self.process_time))
-        self.db_updater()
+def exit_update():
+    print("closing")
+    # print('updating db before closing with {} - {}'.format(t.projectNum, t.process_time))
+    # t.db_updater()
 
-
-
-
-# class Talker:
-#     """this will send information to be saved on the server"""
-#     host = 'some url'
-#
-#     def __init__(self):
-#
-#         self.user = 'someuser'
-#         key_rsa = 'key file location'
-#         self.hostkeys = 'C:\Users\DL\.ssh\\authorized_keys'  # for windows, create a method that retrieves the os and supply the right location for the fil;es needed
-#
-#         self.k = RSAKey.from_private_key_file(key_rsa)
-#         ssh = SSHClient()
-#         ssh.load_system_host_keys(self.hostkeys)
-#         ssh.connect(self.host, username=self.user, pkey=self.k)
 
 if __name__ == '__main__':
-    tracker = Tracker()
-    atexit.register(tracker.exit_update())
+    try:
+        tracker = Tracker()
+        atexit.register(tracker.write_sql)
+        tracker.cur.close()
+    except Exception as argument:
+        logging.exception("Error occured while executing Time tracker")
+        write_log(argument)
 
-    tracker.cur.close()
+
 
 # now  we need to track the input (keyboard/mouse)
 
