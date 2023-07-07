@@ -1,321 +1,326 @@
 #!C:\Users\py_venv\venv_ttracker\Scripts\python.exe
 from os import listdir
+import os
 import platform
-# import pyautogui
+import report as r
 from pynput import mouse, keyboard
 import sqlite3
 import logging
 import time
-import win32gui
+from PRINT_LINK import write_log
 import socket
-import win32process
-# from paramiko import SSHClient
-# from paramiko import RSAKey
 from datetime import datetime
 import atexit
 import re
-
-# with open(log_file, "w"):
-#     pass
-
-c_name = socket.gethostname()
-log_file = f"ttracker-{c_name}.log"
-def write_log(info):
-    with open(log_file, "a") as f:
-        f.write(str(f"\n{info}"))
 
 
 def get_os():
     system = platform.system()
     if system == 'Windows':
-        os = "win"
+        osys = "win"
     else:
-        os = "mac"
-    return os
+        osys = "mac"
+    return osys
 
 
+c_name = socket.gethostname()
+log_file = f"ttracker-{c_name}.log"
+lock_file_path = "script.lock"
+database_path = r'F:\Dropbox\_Programming\timeTracker\timeTracker-{}.sqlite'.format(c_name)
 
-os = get_os()
+commit_interval = 2
+interrupt_delay = 1  # must be smaller than commit interval `
+survey_interval = 300  # interval at which the project folder is checked for updates - in seconds
+inactive_cap = 300
 
-if os == 'win':
+osys = get_os()
 
-    projects = listdir('G:\My Drive\PLICO_CLOUD\PROJECTS')
-    archive = listdir('G:\My Drive\PLICO_ARCHIVE')
+if osys == 'win':
+    projects = listdir(r'G:\My Drive\PLICO_CLOUD\PROJECTS')
+    archive = listdir(r'G:\My Drive\PLICO_ARCHIVE')
 else:
-    pass
-folders = projects + archive
+    projects = listdir(r'mac location of project folder')
+    archive = listdir(r'mac location of archive folder')
 
+folders = projects + archive
 now = datetime.now()
 write_log(f'monitoring started at {now}')
+
+
+def acquire_lock():
+    if osys == 'win':
+        import locker_win
+        locker_win.acquire(lock_file_path)
+    else:
+        import locker_mac
+        locker_mac.acquire(lock_file_path)
+
+
+def release_lock():
+    if osys == 'win':
+        import locker_win
+        locker_win.release(lock_file_path)
+    else:
+        import locker_mac
+        locker_mac.release(lock_file_path)
+
+
+def survey_project_folder():
+    match = r"[A-Za-z\d]+"
+    parts = []
+    proj_num = []
+    proj_text = []
+    for i in folders:
+        info = re.findall(match, i)
+        num = info.pop(0)
+        parts.reverse()
+        try:
+            proj_num.append(str(int(num)))
+        except ValueError as error:
+            pass
+        for j in info:
+            if j.lower() not in proj_text:
+                proj_text.append(j.lower())
+    proj_text.sort()
+    proj_num.sort(reverse=True)
+    proj_info = (proj_num, proj_text)
+    return proj_info
+
 class Tracker:
 
-    """contains all pertaining to tracker & timer"""
-    commit_interval = 10
-    inactive_cap = 5
-    interrupt_delay = 1# must be smaller than commit interval
-    survey_interval = 5 # interval at which the project folder is checked for updates
-
     def __init__(self):
-        self.conn = sqlite3.connect(r'F:\Dropbox\_Programming\timeTracker\timeTracker-{}.sqlite'.format(c_name))
-        # self.conn.set_trace_callback(print)
+
+        acquire_lock()
+        atexit.register(self.closing)
+        self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
-        self.cur.execute('''CREATE TABLE IF NOT EXISTS Time 
+        self.cur.execute(
+            '''CREATE TABLE IF NOT EXISTS Time 
             (id INTEGER PRIMARY KEY UNIQUE, 
             project_id TEXT,
             date TEXT,
-            start TEXT,
-            time INTEGER,
-            serial TEXT UNIQUE,
-            CONSTRAINT unq UNIQUE (project_id, start)) ''')
-
-
+            time INTEGER) '''
+        )
         self.latest_tracked = None
-        self.projectNum = 0
+        self.current_id_tracked = 0
         self.current_project = ''
-        self.interrupt = False
-        self.valid_title = False
+
+        self.inactive_time = 0
         self.interrupt_time = 0
         self.elapsed_time = 0
         self.process_time = 0
-        self.not_project_file_counter = 0
-        self.timestamp = {}
-        self.win_name = ''
-        self.proj_id = []
-        self.start = ''
-
-        self.process_current_time = 0
-        self.sql_insert = 'INSERT OR IGNORE INTO Time (project_id, start, date, time, serial) VALUES ( ?, ?, ?, ?, 0, ?)'
-          # in minutes
-        self.inactive_time = 0
+        self.proj_info = survey_project_folder()
+        self.proj_id = self.proj_info[0]
+        self.project_text = self.proj_info[1]
         self.mouse_listener = mouse.Listener(on_move=self.on_move)
         self.mouse_listener.start()
         self.key_listener = keyboard.Listener(on_press=self.kb_down, on_release=self.up)
         self.key_listener.start()
         self.track()
 
-
     def on_move(self, x, y):
         self.inactive_time = 0
 
-
     def kb_down(self, key):
         self.inactive_time = 0
-
 
     def up(self, key):
         if key == keyboard.Key.esc:
             return False
 
-
     def write_sql(self):
-
-        date = str(datetime.now().date())
-        match = (self.projectNum, date)
-        serial = f'{self.projectNum}-{date}'
-
-        find_cmd = f"SELECT * FROM Time WHERE project_id = ? And date = ? ;"
-        crit = (self.projectNum, date)
-        self.cur.execute(find_cmd, crit)
-        entry = self.cur.fetchone()
-
-        if entry:
-
-            cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
-            self.cur.execute(cmd, match)
-        else:
-            self.cur.execute(
-                'INSERT OR IGNORE INTO Time (project_id, start, date, time, serial) VALUES ( ?, ?, ?, 0,?)',
-                (self.projectNum, self.start, date, serial))
-
-        self.conn.commit()
-        self.process_time = 0
-
-
-    def sql_commit_handler(self, title):
-
-        if self.projectNum == 0:
-            pass
-        else:
-            if self.interrupt:
-                print('committed {} seconds by interrupt'.format(self.process_time))
-                self.start = re.sub('[:.]', '-', str(datetime.now().time()))
-                self.process_time = self.interrupt_time
-                self.process_current_time = 0
-                self.interrupt_time = 0
-                self.write_sql()
-
-
-
-                # self.interrupt = False
-
-            elif self.projectNum == title:
-                # print('process time is now {}'.format(self.process_time))
-                if self.process_current_time == 0:
-                    self.start = re.sub('[:.]', '-', str(datetime.now().time()))
-                self.process_current_time += 1
-
-                if self.process_time == self.commit_interval * 60:
-                    print('committed {} sec on scheduled interval'.format(self.process_time))
-                    if self.process_current_time <= self.commit_interval*60:
-                        print('new')
-                        self.write_sql()
-                    else:
-                        # print(f'pct: {self.process_current_time}')
-                        self.write_sql()
-
-            else:
-                pass
-
-            date_time = time.time()
-            self.timestamp[title] = int(date_time)
-
-    def interrupt_handler(self, title):
-
-        if title == 0 and self.projectNum == 0:
-            self.interrupt = False
-
-        elif title != 0 and self.projectNum == 0:
-            self.interrupt = False
-            self.projectNum = title
-            self.process_time += self.idle()
-
-        elif self.projectNum == title and title != 0:
-            self.interrupt = False
-            self.projectNum = title
-            self.process_time += self.idle()
-
-        elif self.projectNum != title:
-
-            print(f'will interrupt in{self.interrupt_delay - self.interrupt_time} sec')
-            if (self.interrupt_delay * 60) == self.interrupt_time:
-                self.latest_tracked = self.projectNum
-                self.interrupt = True
-                self.projectNum = title
-                print(f'will interrupt in{self.interrupt_delay - self.interrupt_time} sec')
-            else:
-                self.interrupt_time += 1
-
-
+        project_id = int(self.current_id_tracked)
+        if project_id != 0 and self.process_time != 0:
+            now = datetime.now()
+            # if self.process_time > commit_interval*60:
+            #     intro = f'\nERROR!!!!!\n process time:{self.process_time}\ncommit_interval:{commit_interval*60}\n{now}\n'
             # else:
-            #     print(f'will interrupt in{self.interrupt_delay-self.interrupt_time} sec')
-
-    def survey_project_folder(self):
-
-
-        proj_num = []
-        for i in folders:
-            try:
-                proj_num.append(int(i[:4]))
-            except ValueError:
-                pass
-        proj_num.sort(reverse=True)
-        self.proj_id = proj_num
-        
-    def idle(self):
-        value = 0
-        if self.inactive_cap == 0:
-
-            value = 1
-        else:
-            if self.inactive_time < (self.inactive_cap * 60) and self.inactive_cap != 0:
-                value = 1
-
+            #     intro = f'\n{now}\n'
+            intro = f'\n{now}\n'
+            date = str(datetime.now().date())
+            match = (project_id, date)
+            cmd = f"SELECT * FROM Time WHERE project_id = ? And date = ? ;"
+            self.cur.execute(cmd, match)
+            entry = self.cur.fetchone()
+            if entry:
+                cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
+                self.cur.execute(cmd, match)
+                printout = f'{intro} TIME ADDED: {project_id} {date}--> {self.process_time}'
+                print(f"time added: {self.process_time} sec")
             else:
+                cmd = 'INSERT OR IGNORE INTO Time (project_id, date, time) VALUES ( ?, ?, ?)'
+                self.cur.execute(cmd, (project_id, date, self.process_time))
+                printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
+                print("new entry created")
+            self.conn.commit()
+            self.process_time = 0
+            write_log(printout)
+        # else:
+        #     print(f"project {project_id} invalid, no sql written")
 
-                if self.process_time > 1:
-                    self.end = re.sub('[:.]', '-', str(datetime.now().time()))
+    def timer_manager(self):
+        self.process_time += 1
+        if self.process_commit_interval_test():
+            # self.project_info_updater()
+            self.write_sql()
+
+        if self.inactive_cap_test():
+            self.inactive_triggered()
+            self.process_time -= 1
+
+        if self.interrupt_test():#compares the window title to the local project info
+            self.interrupt_time += 1
+            # print(f"interrupt: {self.interrupt_time}")
+            if self.interrupt_delay_test():
+                if self.window_id_validity_test():
+                    # self.process_time -= self.interrupt_time
+                    self.interrupt_time = 0
                     self.write_sql()
+                    self.project_info_updater()
                 else:
-                    self.current_project = ''
-                    self.projectNum = 0
                     self.process_time = 0
-        return value
-
-    def not_project_file(self, title):
-        time = self.process_time
-        if not self.valid_title:
-            self.not_project_file_counter += 1
+                    self.interrupt_time = 0
         else:
-            self.not_project_file_counter = 0
+            """reset interrupt_time"""
+            # print("interrupt_time resetted")
+            self.interrupt_time = 0
+                
+        if self.elapsed_time_test():
 
-        if self.inactive_cap > 0 and self.not_project_file_counter > self.inactive_cap*60:
-            print('... been idling for {} sec'.format(self.not_project_file_counter - self.inactive_cap*60))
-            self.process_time = time
+            self.refresh_project_folder_content()
+        self.elapsed_time += 1
+        self.inactive_time += 1
+
+
+
+
+    def refresh_project_folder_content(self):
+        info = survey_project_folder()
+        self.proj_id = info[0]
+        self.project_text = info[1]
+
+
+    def project_info_updater(self):
+        info = self.parsed_title_info()
+        window_id = info["ID"]
+        if self.window_id_validity_test():
+            # print(f"valid project {window_id}")
+            """switch to new project"""
+            self.current_id_tracked = window_id
+            self.project_text = info["TEXT"]
+        else:
+            """idle process_time"""
+            self.current_id_tracked = 0
+
+    def inactive_triggered(self):
+        if self.process_time > 1:
+            self.write_sql()
+        else:
+            self.current_project = ''
+            self.current_id_tracked = 0
+            self.process_time = 0
+
+    def elapsed_time_test(self):
+        if self.elapsed_time % (survey_interval) == 0:
+
             return True
         else:
             return False
 
+    def inactive_cap_test(self):
+        if self.inactive_time >= inactive_cap * 60:
+            return True
+        else:
+            return False
+
+    def process_commit_interval_test(self):
+        if self.process_time >= commit_interval * 60:
+            return True
+        else:
+            return False
+
+    def interrupt_delay_test(self):
+        if self.interrupt_time >= interrupt_delay * 60:
+            return True
+        else:
+            return False
+
+    def interrupt_test(self):
+        window_id = self.parsed_title_info().get("ID", 0)
+        # print(window_id)
+
+        if int(self.current_id_tracked) != int(window_id):
+
+            return True
+        else:
+
+            return False
+
+    def get_title(self):
+        if os == 'win':
+            import title_win
+            name = title_win.title()
+        else:
+            import title_mac
+            name = title_mac.title()
+        return name
+
+    def window_id_validity_test(self):
+        # TODO: fix the validity test to be comparing only the text of the project title with the text of the
+        #  window title not the cumulative text of all projects
+        window_info = self.parsed_title_info()
+        window_id = window_info.get("ID", 0)
+        title_score = window_info.get("SCORE", 0)
+        if window_id in self.proj_id:
+            if title_score >= 1:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def parsed_title_info(self):
+        """keys: ID, TEXT, SCORE"""
+        result = {}
+        window_title = self.get_title()
+        id = re.findall(r'\d+', window_title)
+        if id:
+            wid = id[0]
+        else:
+            wid = 0
+        result.update({"ID": wid})
+        result.update({"TEXT": [i.lower() for i in re.findall(r"[A-Za-z]+", window_title)]})
+        for i in self.project_text:
+            for j in result["TEXT"]:
+                if i == j:
+                    result["SCORE"] = result.get("SCORE", 0) + 1
+        return result
 
 
-    def win_title(self):
-        hwnd = win32gui.GetForegroundWindow()
-        win_name = win32gui.GetWindowText(hwnd)
-        return win_name
-
-    def mac_title(self):
-        pass
     def track(self):
+        # while True:
+            r.report(self.conn)
+            self.timer_manager()
+            # time.sleep(1)
 
-        while True:
-            if os == "win":
-                win_name = self.win_title()
-            else:
-                win_name = self.mac_title()
+    def closing(self):
 
-            try:
-                starts = re.findall('\d+[\s_-]', win_name)
-                self.valid_title = True
-
-            except TypeError as error:
-                self.valid_title = False
-
-
-                starts = ''
-            self.inactive_time += 1
-            if self.elapsed_time % (self.survey_interval * 60) == 0:
-                self.survey_project_folder()
-            self.elapsed_time += 1
-
-            if len(starts) > 0:
-                try:
-                    title = int(starts[0][:4])
-
-                except ValueError as error:
-                    title = self.projectNum
-            else:
-
-                title = self.projectNum
-                self.valid_title = False
-
-            if title in self.proj_id:
-                # self.win_name = win_name
-                self.interrupt_handler(title)
-
-
-            if not self.not_project_file(title):
-                self.sql_commit_handler(title)
-            time.sleep(1)
-
-
-
-def exit_update():
-    print("closing")
-    # print('updating db before closing with {} - {}'.format(t.projectNum, t.process_time))
-    # t.db_updater()
-
+        self.write_sql()
+        self.cur.close()
+        release_lock()
 
 if __name__ == '__main__':
+
     try:
         tracker = Tracker()
-        atexit.register(tracker.write_sql)
+        while True:
+            tracker.track()
+            time.sleep(1)
         tracker.cur.close()
+
     except Exception as argument:
         logging.exception("Error occured while executing Time tracker")
         write_log(argument)
-
-
-
-# now  we need to track the input (keyboard/mouse)
 
 
 
