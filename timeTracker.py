@@ -26,7 +26,7 @@ def get_os():
 c_name = socket.gethostname()
 log_file = f"ttracker-{c_name}.log"
 lock_file_path = "script.lock"
-database_path = r'F:\Dropbox\_Programming\timeTracker\timeTracker-{}.sqlite'.format(c_name)
+database_path = r'timeTracker-{}.sqlite'.format(c_name)
 
 commit_interval = 2
 interrupt_delay = 1  # must be smaller than commit interval `
@@ -65,15 +65,20 @@ def release_lock():
         locker_mac.release(lock_file_path)
 
 
-def survey_project_folder():
+def survey_project_folder_old():
     match = r"[A-Za-z\d]+"
     parts = []
     proj_num = []
     proj_text = []
+    projects = {}
     for i in folders:
         info = re.findall(match, i)
         num = info.pop(0)
         parts.reverse()
+        # new way:
+        data = {num: info}
+        projects.update(data)
+        # old way
         try:
             proj_num.append(str(int(num)))
         except ValueError as error:
@@ -85,6 +90,40 @@ def survey_project_folder():
     proj_num.sort(reverse=True)
     proj_info = (proj_num, proj_text)
     return proj_info
+
+
+def survey_project_folder():
+    match = r"[A-Za-z\d]+"
+    parts = []
+    proj_num = []
+    proj_text = []
+    projects = {}
+    for i in folders:
+        info = re.findall(match, i)
+        num = info.pop(0)
+        parts.reverse()
+        # new way:
+        text = []
+        for i in info:
+            text.append(i.lower())
+
+        data = {num: text}
+
+        projects.update(data)
+        # old way
+        try:
+            proj_num.append(str(int(num)))
+        except ValueError as error:
+            pass
+        for j in info:
+            if j.lower() not in proj_text:
+                proj_text.append(j.lower())
+    proj_text.sort()
+    proj_num.sort(reverse=True)
+    proj_info = (proj_num, proj_text)
+    print(projects)
+    return projects
+
 
 class Tracker:
 
@@ -110,8 +149,8 @@ class Tracker:
         self.elapsed_time = 0
         self.process_time = 0
         self.proj_info = survey_project_folder()
-        self.proj_id = self.proj_info[0]
-        self.project_text = self.proj_info[1]
+        # self.proj_id = self.proj_info[0]
+        # self.project_text = self.proj_info[1]
         self.mouse_listener = mouse.Listener(on_move=self.on_move)
         self.mouse_listener.start()
         self.key_listener = keyboard.Listener(on_press=self.kb_down, on_release=self.up)
@@ -195,9 +234,10 @@ class Tracker:
 
 
     def refresh_project_folder_content(self):
-        info = survey_project_folder()
-        self.proj_id = info[0]
-        self.project_text = info[1]
+        # info = survey_project_folder()
+        # self.proj_id = info[0]
+        # self.project_text = info[1]
+        self.proj_info = survey_project_folder()
 
 
     def project_info_updater(self):
@@ -290,10 +330,19 @@ class Tracker:
             wid = 0
         result.update({"ID": wid})
         result.update({"TEXT": [i.lower() for i in re.findall(r"[A-Za-z]+", window_title)]})
-        for i in self.project_text:
-            for j in result["TEXT"]:
-                if i == j:
-                    result["SCORE"] = result.get("SCORE", 0) + 1
+
+        project_text = self.proj_info.get(wid)
+        print(project_text)
+        if project_text:
+            for i in project_text:
+                for j in result["TEXT"]:
+                    if i == j:
+                        result["SCORE"] = result.get("SCORE", 0) + 1
+                    else:
+                        result["SCORE"] = result.get("SCORE", 0)
+        else:
+            result["SCORE"] = result.get("SCORE", 0)
+        print(f"result: {result['SCORE']}")
         return result
 
 
