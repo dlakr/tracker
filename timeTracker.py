@@ -311,7 +311,7 @@ class Tracker:
         window_info = self.parsed_title_info()
         window_id = window_info.get("ID", 0)
         title_score = window_info.get("SCORE", 0)
-        if window_id in self.proj_id:
+        if window_id in list(self.proj_info.keys()):
             if title_score >= 1:
                 return True
             else:
