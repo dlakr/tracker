@@ -75,10 +75,8 @@ def survey_project_folder_old():
         info = re.findall(match, i)
         num = info.pop(0)
         parts.reverse()
-        # new way:
         data = {num: info}
         projects.update(data)
-        # old way
         try:
             proj_num.append(str(int(num)))
         except ValueError as error:
@@ -106,9 +104,7 @@ def survey_project_folder():
         text = []
         for i in info:
             text.append(i.lower())
-
         data = {num: text}
-
         projects.update(data)
         # old way
         try:
@@ -143,14 +139,11 @@ class Tracker:
         self.latest_tracked = None
         self.current_id_tracked = 0
         self.current_project = ''
-
         self.inactive_time = 0
         self.interrupt_time = 0
         self.elapsed_time = 0
         self.process_time = 0
         self.proj_info = survey_project_folder()
-        # self.proj_id = self.proj_info[0]
-        # self.project_text = self.proj_info[1]
         self.mouse_listener = mouse.Listener(on_move=self.on_move)
         self.mouse_listener.start()
         self.key_listener = keyboard.Listener(on_press=self.kb_down, on_release=self.up)
@@ -169,12 +162,8 @@ class Tracker:
 
     def write_sql(self):
         project_id = int(self.current_id_tracked)
-        if project_id != 0 and self.process_time != 0:
+        if self.process_time != 0:#project_id != 0 and
             now = datetime.now()
-            # if self.process_time > commit_interval*60:
-            #     intro = f'\nERROR!!!!!\n process time:{self.process_time}\ncommit_interval:{commit_interval*60}\n{now}\n'
-            # else:
-            #     intro = f'\n{now}\n'
             intro = f'\n{now}\n'
             date = str(datetime.now().date())
             match = (project_id, date)
@@ -194,25 +183,19 @@ class Tracker:
             self.conn.commit()
             self.process_time = 0
             write_log(printout)
-        # else:
-        #     print(f"project {project_id} invalid, no sql written")
+
 
     def timer_manager(self):
         self.process_time += 1
         if self.process_commit_interval_test():
-            # self.project_info_updater()
             self.write_sql()
-
         if self.inactive_cap_test():
             self.inactive_triggered()
             self.process_time -= 1
-
-        if self.interrupt_test():#compares the window title to the local project info
+        if self.interrupt_test():
             self.interrupt_time += 1
-            # print(f"interrupt: {self.interrupt_time}")
             if self.interrupt_delay_test():
                 if self.window_id_validity_test():
-                    # self.process_time -= self.interrupt_time
                     self.interrupt_time = 0
                     self.write_sql()
                     self.project_info_updater()
@@ -221,22 +204,15 @@ class Tracker:
                     self.interrupt_time = 0
         else:
             """reset interrupt_time"""
-            # print("interrupt_time resetted")
             self.interrupt_time = 0
-                
         if self.elapsed_time_test():
-
             self.refresh_project_folder_content()
         self.elapsed_time += 1
         self.inactive_time += 1
 
 
-
-
     def refresh_project_folder_content(self):
-        # info = survey_project_folder()
-        # self.proj_id = info[0]
-        # self.project_text = info[1]
+
         self.proj_info = survey_project_folder()
 
 
@@ -244,12 +220,11 @@ class Tracker:
         info = self.parsed_title_info()
         window_id = info["ID"]
         if self.window_id_validity_test():
-            # print(f"valid project {window_id}")
             """switch to new project"""
             self.current_id_tracked = window_id
             self.project_text = info["TEXT"]
         else:
-            """idle process_time"""
+            """TRACK PROJECT 0000 WHEN THE WINDOW TITLE IS NOT VALID"""
             self.current_id_tracked = 0
 
     def inactive_triggered(self):
@@ -306,8 +281,6 @@ class Tracker:
         return name
 
     def window_id_validity_test(self):
-        # TODO: fix the validity test to be comparing only the text of the project title with the text of the
-        #  window title not the cumulative text of all projects
         window_info = self.parsed_title_info()
         window_id = window_info.get("ID", 0)
         title_score = window_info.get("SCORE", 0)
