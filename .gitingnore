@@ -1,1 +1,3 @@
 *.sqlite
+*.log
+next_period

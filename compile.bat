@@ -1,0 +1,1 @@
+pyinstaller --onefile --icon=clock.ico timeTracker.py > compile_log.txt 2>&1

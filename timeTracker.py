@@ -8,6 +8,7 @@ import sqlite3
 import logging
 import time
 from PRINT_LINK import write_log
+from PRINT_LINK import write
 import socket
 from datetime import datetime
 import atexit
@@ -174,12 +175,10 @@ class Tracker:
                 cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
                 self.cur.execute(cmd, match)
                 printout = f'{intro} TIME ADDED: {project_id} {date}--> {self.process_time}'
-                print(f"time added: {self.process_time} sec")
             else:
                 cmd = 'INSERT OR IGNORE INTO Time (project_id, date, time) VALUES ( ?, ?, ?)'
                 self.cur.execute(cmd, (project_id, date, self.process_time))
                 printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
-                print("new entry created")
             self.conn.commit()
             self.process_time = 0
             write_log(printout)
@@ -189,6 +188,7 @@ class Tracker:
         self.process_time += 1
         if self.process_commit_interval_test():
             self.write_sql()
+            write(f'INTERVAL')
         if self.inactive_cap_test():
             self.inactive_triggered()
             self.process_time -= 1
@@ -198,6 +198,7 @@ class Tracker:
                 if self.window_id_validity_test():
                     self.interrupt_time = 0
                     self.write_sql()
+                    write(f"INTERRUPT")
                     self.project_info_updater()
                 else:
                     self.process_time = 0
@@ -230,6 +231,7 @@ class Tracker:
     def inactive_triggered(self):
         if self.process_time > 1:
             self.write_sql()
+            write(f"INACTIVE")
         else:
             self.current_project = ''
             self.current_id_tracked = 0

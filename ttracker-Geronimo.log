@@ -10629,3 +10629,165 @@ File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
 
 2023-07-07 06:44:08.188401
  TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 13:58:40.645745
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 14:01:55.587516
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 47
+monitoring started at 2023-07-07 14:02:32.846971
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 14:03:56.765434
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 14:05:57.897109
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 14:07:59.044729
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 157
+
+2023-07-07 14:10:00.235205
+ TIME ADDED: 2042 2023-07-07--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 47
+monitoring started at 2023-07-09 16:47:48.689805
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 47
+monitoring started at 2023-07-09 16:51:42.643612
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 372
+'Tracker' object has no attribute 'proj_id'
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 372
+'Tracker' object has no attribute 'proj_id'
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 47
+monitoring started at 2023-07-09 17:00:04.748868
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 17:02:03.731368
+ NEW ENTRY: 2216 2023-07-09 --> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 17:04:04.695245
+ TIME ADDED: 2216 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 17:04:12.677709
+ TIME ADDED: 2216 2023-07-09--> 7
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 47
+monitoring started at 2023-07-09 20:03:05.191421
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:05:04.087370
+ NEW ENTRY: 0 2023-07-09 --> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:07:05.101382
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:09:05.993672
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:11:06.843024
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:13:07.733111
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:15:08.667601
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:17:09.580170
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:19:10.477032
+ TIME ADDED: 0 2023-07-09--> 120
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 196
+
+2023-07-09 20:20:45.638995
+ TIME ADDED: 0 2023-07-09--> 94
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 48
+monitoring started at 2023-07-11 10:19:09.400899
+File "F:/Dropbox/_Programming/timeTracker/report.py", line 122
+2023-07-11 - publishing Report_2023-07-10_to_2023-07-24
+
+2023-07-11 10:21:08.531904
+ NEW ENTRY: 0 2023-07-11 --> 120
+time added: 79 sec
+
+2023-07-11 10:22:28.201911
+ TIME ADDED: 0 2023-07-11--> 79
+
+2023-07-11 10:25:41.777940
+ NEW ENTRY: 1932 2023-07-11 --> 49
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 48
+monitoring started at 2023-07-11 11:43:52.143768
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:45:51.371293
+ TIME ADDED: 0 2023-07-11--> 120
+INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:46:45.935230
+ TIME ADDED: 0 2023-07-11--> 54
+INTERRUPT
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:49:52.908748
+ TIME ADDED: 1932 2023-07-11--> 13
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 48
+monitoring started at 2023-07-11 11:49:54.675084
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:51:53.847849
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:53:55.052759
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:55:56.318931
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:57:57.399251
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 11:59:58.430050
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 12:01:59.601214
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 12:04:00.759266
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 12:06:01.916442
+ TIME ADDED: 0 2023-07-11--> 120
+PROJECT #INTERVAL
+File "F:/Dropbox/_Programming/timeTracker/timeTracker.py", line 184
+
+2023-07-11 12:06:55.274491
+ TIME ADDED: 0 2023-07-11--> 52
