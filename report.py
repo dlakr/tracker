@@ -1,24 +1,34 @@
 import datetime
-
 import os
 import socket
 from PRINT_LINK import write_log
+import sqlite3
 sleep = 3
 period = 14
 
 p_loc = "next_period"
+
+c_name = socket.gethostname()
+log_file = f"ttracker-{c_name}.log"
+lock_file_path = "script.lock"
+database_path = r'timeTracker-{}.sqlite'.format(c_name)
+conn = sqlite3.connect(database_path)
+
 
 
 def get_period():
     with open(p_loc) as f:
         p = f.read()
     return p
+    # return "2023-06-26"
 
 c_name = socket.gethostname()
 log_file = f"ttracker-{c_name}.log"
 date =  get_period()
 format = "%Y-%m-%d"
-dest = r"F:\Dropbox\_Admin_office\LEGAL_&_FINANCE\TIMESHEETS_PLICO\TRACKER"
+dest = r"TRACKER"
+if not os.path.exists(dest):
+    os.mkdir(dest)
 p_length = datetime.timedelta(days=period)
 start = datetime.datetime.strptime(date, format)
 end = start + p_length
@@ -36,33 +46,31 @@ def write(f_name, data):
         f.write(str(data))
 
 
-def retrieve_data(conn, start, end):
+def retrieve_data(start, end):
     cursor = conn.cursor()
     out = []
     query = """
     SELECT project_id, date, time 
     FROM Time WHERE date 
     BETWEEN ? AND ? 
-    GROUP BY date"""
-
+    """
+    d2 = {}
     cursor.execute(query, (start, end))
     rows = cursor.fetchall()
     for row in rows:
         project_id, date, time = row
-
         p = f"""date:{date},\nproject: {project_id}\ntime: {time}\n"""
         d = {'date': date, 'project': project_id, 'time': time}
-        out.append(d)
-        print(p)
+        d2[date] = d2.get(date, {})
+        d2[date][project_id] = d2[date].get(project_id, time)
 
-    return out
+    return d2
+
 
 def convert_integer_to_time(integer):
     duration = datetime.timedelta(seconds=integer)
     return duration
-
-print(convert_integer_to_time(15330))
-def generate_html(data, title):
+def generate_html_ss(data, title):
     html_content = f"""
     <html>
         
@@ -102,6 +110,52 @@ def generate_html(data, title):
     return html_content
 
 
+def generate_html(data, title):
+    html_content = f"""
+    <html>
+
+    <head>
+        <link rel="stylesheet" href="report_style.css">
+        <title>{title}</title>
+
+    </head>
+    <body>
+        <h1>{title}</h1>
+
+
+    """
+    print(data)
+    for v in data:
+        print(f"item:{v}")
+
+        html_content += f"""
+        <div class="table-container">
+            <table class="table">
+                <th colspan='2'>{v}</th>
+                <tr class="column-headers">
+                    <td>PROJECT</td>
+                    <td>TIME</td>
+                </tr>
+"""
+
+
+        for inner_v in data[v]:
+            time = convert_integer_to_time(int(data[v][inner_v]))
+            html_content += f"""
+                    <tr>
+                        <td>{inner_v}</td>
+                        <td>{time}</td>
+                    </tr>
+        """
+
+    html_content += """
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+
+    return html_content
 def create_report(entries, title):
 
     output = os.path.join(dest, f"{title}.html")
@@ -109,7 +163,24 @@ def create_report(entries, title):
     write(output, html)
 
 
-def report(conn):
+# def report_ss(conn):
+#     start = datetime.datetime.strptime(get_period(), format)
+#     end = start + p_length
+#     rt = f"Report_{start.date()}_to_{end.date()}"
+#
+#     now = datetime.date.today()
+#     now_dt = datetime.datetime.strftime(now, format)
+#     start_dt = datetime.datetime.strftime(start, format)
+#
+#     if now_dt >= start_dt:
+#         write_log(f'{now} - publishing {rt}')
+#         data = retrieve_data(conn, start, end)
+#         create_report(data, rt)
+#         write(p_loc, end.date())
+
+
+def report():
+
     start = datetime.datetime.strptime(get_period(), format)
     end = start + p_length
     rt = f"Report_{start.date()}_to_{end.date()}"
@@ -120,7 +191,7 @@ def report(conn):
 
     if now_dt >= start_dt:
         write_log(f'{now} - publishing {rt}')
-        data = retrieve_data(conn, start, end)
+        data = retrieve_data(start, end)
         create_report(data, rt)
         write(p_loc, end.date())
 

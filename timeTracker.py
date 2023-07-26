@@ -13,6 +13,7 @@ import socket
 from datetime import datetime
 import atexit
 import re
+import threading
 
 
 def get_os():
@@ -121,7 +122,7 @@ def survey_project_folder():
     print(projects)
     return projects
 
-
+# todo: still commits double entry need to find out why
 class Tracker:
 
     def __init__(self):
@@ -149,7 +150,7 @@ class Tracker:
         self.mouse_listener.start()
         self.key_listener = keyboard.Listener(on_press=self.kb_down, on_release=self.up)
         self.key_listener.start()
-        self.track()
+        # self.track()
 
     def on_move(self, x, y):
         self.inactive_time = 0
@@ -180,7 +181,7 @@ class Tracker:
                 self.cur.execute(cmd, (project_id, date, self.process_time))
                 printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
             self.conn.commit()
-            self.process_time = 0
+            self.zero_timers()
             write_log(printout)
 
 
@@ -201,8 +202,7 @@ class Tracker:
                     write(f"INTERRUPT")
                     self.project_info_updater()
                 else:
-                    self.process_time = 0
-                    self.interrupt_time = 0
+                    self.zero_timers()
         else:
             """reset interrupt_time"""
             self.interrupt_time = 0
@@ -215,6 +215,11 @@ class Tracker:
     def refresh_project_folder_content(self):
 
         self.proj_info = survey_project_folder()
+
+
+    def  zero_timers(self):
+        self.process_time = 0
+        self.interrupt_time = 0
 
 
     def project_info_updater(self):
@@ -320,12 +325,9 @@ class Tracker:
         print(f"result: {result['SCORE']}")
         return result
 
-
     def track(self):
-        # while True:
-            r.report(self.conn)
+            r.report()
             self.timer_manager()
-            # time.sleep(1)
 
     def closing(self):
 
@@ -340,7 +342,9 @@ if __name__ == '__main__':
         while True:
             tracker.track()
             time.sleep(1)
-        tracker.cur.close()
+        # timer = threading.Timer(commit_interval * 60, tracker.track())
+        # timer.start()
+        # timer.join()
 
     except Exception as argument:
         logging.exception("Error occured while executing Time tracker")
