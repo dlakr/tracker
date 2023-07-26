@@ -55,7 +55,5 @@ class timeTracker_2_test(unittest.TestCase):
         pass
 
 
-
-
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,32 @@
+/* report_style.css */
+
+.table-container {
+    width: 50%;
+}
+tr.column-headers{
+    height: 10px !important;
+    font-weight: bold !important;
+    }
+.table {
+    width: 200px;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table th{
+    width: 100px;
+    text-align: left;
+    background-color: #f2f2f2;
+    font-weight: bold;
+    }
+
+.table td {
+
+    text-align: left;
+    border: 1px solid #ccc;
+}
+
+.table tr {
+    height: 30px;
+}
+
