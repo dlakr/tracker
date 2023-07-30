@@ -196,13 +196,13 @@ class Tracker:
         if self.interrupt_test():
             self.interrupt_time += 1
             if self.interrupt_delay_test():
-                if self.window_id_validity_test():
-                    self.interrupt_time = 0
-                    self.write_sql()
-                    write(f"INTERRUPT")
-                    self.project_info_updater()
-                else:
-                    self.zero_timers()
+                self.window_id_validity_test()
+                self.interrupt_time = 0
+                self.write_sql()
+                write(f"INTERRUPT")
+                self.project_info_updater()
+                # else:
+                #     self.zero_timers()
         else:
             """reset interrupt_time"""
             self.interrupt_time = 0
