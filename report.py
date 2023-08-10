@@ -87,12 +87,13 @@ def generate_html(data, title):
 
     """
     for v in data:
-        print(f"item:{v}")
-
+        day = datetime.datetime.strptime(v, '%Y-%m-%d').strftime("%A")
+        print(f"item:{day} - {v}")
+        day_date = f"{day} - {v}"
         html_content += f"""
         <div class="table-container">
             <table class="table">
-                <th colspan='2'>{v}</th>
+                <th colspan='2'>{day_date}</th>
                 <tr class="column-headers">
                     <td>PROJECT</td>
                     <td>TIME</td>
@@ -141,3 +142,4 @@ def report():
         write(p_loc, end.date())
 
 
+# report()
