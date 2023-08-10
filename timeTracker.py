@@ -36,6 +36,7 @@ survey_interval = 300  # interval at which the project folder is checked for upd
 inactive_cap = 300
 
 osys = get_os()
+print(osys)
 
 if osys == 'win':
     projects = listdir(r'G:\My Drive\PLICO_CLOUD\PROJECTS')
@@ -119,7 +120,7 @@ def survey_project_folder():
     proj_text.sort()
     proj_num.sort(reverse=True)
     proj_info = (proj_num, proj_text)
-    print(projects)
+    # print(projects)
     return projects
 
 # todo: still commits double entry need to find out why
@@ -182,7 +183,7 @@ class Tracker:
                 printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
             self.conn.commit()
             self.zero_timers()
-            write_log(printout)
+            # write_log(printout)
 
 
     def timer_manager(self):
@@ -270,21 +271,18 @@ class Tracker:
     def interrupt_test(self):
         window_id = self.parsed_title_info().get("ID", 0)
         # print(window_id)
-
         if int(self.current_id_tracked) != int(window_id):
-
             return True
         else:
-
             return False
 
     def get_title(self):
-        if os == 'win':
-            import title_win
-            name = title_win.title()
-        else:
-            import title_mac
-            name = title_mac.title()
+        # if os == 'win':
+        import title_win
+        name = title_win.title()
+        # else:
+        #     import title_mac
+        #     name = title_mac.title()
         return name
 
     def window_id_validity_test(self):
@@ -312,7 +310,7 @@ class Tracker:
         result.update({"TEXT": [i.lower() for i in re.findall(r"[A-Za-z]+", window_title)]})
 
         project_text = self.proj_info.get(wid)
-        print(project_text)
+        # print(project_text)
         if project_text:
             for i in project_text:
                 for j in result["TEXT"]:
