@@ -1,6 +1,4 @@
-#!C:\Users\dlaqu\programs\tracker\w_venv\Scripts\python.exe
-import sys
-
+#!C:\Users\py_venv\venv_ttracker\Scripts\python.exe
 from os import listdir
 import os
 import platform
@@ -15,7 +13,7 @@ import socket
 from datetime import datetime
 import atexit
 import re
-from helpers import redirect_to_file
+import threading
 
 
 def get_os():
@@ -35,9 +33,10 @@ database_path = r'timeTracker-{}.sqlite'.format(c_name)
 commit_interval = 2
 interrupt_delay = 1  # must be smaller than commit interval `
 survey_interval = 300  # interval at which the project folder is checked for updates - in seconds
-inactive_cap = 5
+inactive_cap = 300
 
 osys = get_os()
+print(osys)
 
 if osys == 'win':
     projects = listdir(r'G:\My Drive\PLICO_CLOUD\PROJECTS')
@@ -48,7 +47,7 @@ else:
 
 folders = projects + archive
 now = datetime.now()
-print(f'monitoring started at {now}')
+write_log(f'monitoring started at {now}')
 
 
 def acquire_lock():
@@ -121,6 +120,7 @@ def survey_project_folder():
     proj_text.sort()
     proj_num.sort(reverse=True)
     proj_info = (proj_num, proj_text)
+    # print(projects)
     return projects
 
 # todo: still commits double entry need to find out why
@@ -165,7 +165,7 @@ class Tracker:
 
     def write_sql(self):
         project_id = int(self.current_id_tracked)
-        if (self.process_time != 0 and self.current_id_tracked != 9999):#project_id != 0 and
+        if self.process_time != 0:#project_id != 0 and
             now = datetime.now()
             intro = f'\n{now}\n'
             date = str(datetime.now().date())
@@ -176,15 +176,14 @@ class Tracker:
             if entry:
                 cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
                 self.cur.execute(cmd, match)
-                printout = f'TIME ADDED: {project_id} {now}--> {self.process_time}'
+                printout = f'{intro} TIME ADDED: {project_id} {date}--> {self.process_time}'
             else:
                 cmd = 'INSERT OR IGNORE INTO Time (project_id, date, time) VALUES ( ?, ?, ?)'
                 self.cur.execute(cmd, (project_id, date, self.process_time))
-                printout = f'{intro} NEW ENTRY: {project_id} {now} --> {self.process_time}'
+                printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
             self.conn.commit()
             self.zero_timers()
-            print(printout)
-
+            # write_log(printout)
 
 
     def timer_manager(self):
@@ -201,7 +200,7 @@ class Tracker:
                 self.window_id_validity_test()
                 self.interrupt_time = 0
                 self.write_sql()
-                print(f"INTERRUPT AT {now}")
+                write(f"INTERRUPT")
                 self.project_info_updater()
                 # else:
                 #     self.zero_timers()
@@ -212,8 +211,6 @@ class Tracker:
             self.refresh_project_folder_content()
         self.elapsed_time += 1
         self.inactive_time += 1
-        print(f"inactive time: {self.inactive_time}")
-        print(f"project tracked: {self.current_id_tracked}")
 
 
     def refresh_project_folder_content(self):
@@ -243,7 +240,7 @@ class Tracker:
             write(f"INACTIVE")
         else:
             self.current_project = ''
-            self.current_id_tracked = 9999
+            self.current_id_tracked = 0
             self.process_time = 0
 
     def elapsed_time_test(self):
@@ -273,7 +270,7 @@ class Tracker:
 
     def interrupt_test(self):
         window_id = self.parsed_title_info().get("ID", 0)
-
+        # print(window_id)
         if int(self.current_id_tracked) != int(window_id):
             return True
         else:
@@ -304,9 +301,7 @@ class Tracker:
         """keys: ID, TEXT, SCORE"""
         result = {}
         window_title = self.get_title()
-
         id = re.findall(r'\d+', window_title)
-
         if id:
             wid = id[0]
         else:
@@ -315,7 +310,7 @@ class Tracker:
         result.update({"TEXT": [i.lower() for i in re.findall(r"[A-Za-z]+", window_title)]})
 
         project_text = self.proj_info.get(wid)
-
+        # print(project_text)
         if project_text:
             for i in project_text:
                 for j in result["TEXT"]:
@@ -339,13 +334,15 @@ class Tracker:
         release_lock()
 
 if __name__ == '__main__':
-    redirect_to_file('output.log')
+
     try:
         tracker = Tracker()
         while True:
             tracker.track()
             time.sleep(1)
-
+        # timer = threading.Timer(commit_interval * 60, tracker.track())
+        # timer.start()
+        # timer.join()
 
     except Exception as argument:
         logging.exception("Error occured while executing Time tracker")
