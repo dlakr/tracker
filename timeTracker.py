@@ -1,4 +1,4 @@
-#!C:\Users\py_venv\venv_ttracker\Scripts\python.exe
+#!C:\Users\dlaqu\programs\tracker\w_venv\Scripts\python.exe
 import sys
 
 from os import listdir
