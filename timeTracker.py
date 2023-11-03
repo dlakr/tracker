@@ -25,6 +25,8 @@ def get_os():
     return osys
 
 
+logging.basicConfig(filename='error_log.log', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
+
 c_name = socket.gethostname()
 log_file = f"ttracker-{c_name}.log"
 lock_file_path = "script.lock"
