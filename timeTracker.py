@@ -38,7 +38,6 @@ survey_interval = 300  # interval at which the project folder is checked for upd
 inactive_cap = 5
 
 osys = get_os()
-print(osys)
 
 if osys == 'win':
     projects = listdir(r'G:\My Drive\PLICO_CLOUD\PROJECTS')
@@ -122,7 +121,6 @@ def survey_project_folder():
     proj_text.sort()
     proj_num.sort(reverse=True)
     proj_info = (proj_num, proj_text)
-    # print(projects)
     return projects
 
 # todo: still commits double entry need to find out why
@@ -178,11 +176,11 @@ class Tracker:
             if entry:
                 cmd = f'''UPDATE Time SET time = time + {self.process_time} WHERE project_id = ? And date = ? ;'''
                 self.cur.execute(cmd, match)
-                printout = f'{intro} TIME ADDED: {project_id} {date}--> {self.process_time}'
+                printout = f'TIME ADDED: {project_id} {now}--> {self.process_time}'
             else:
                 cmd = 'INSERT OR IGNORE INTO Time (project_id, date, time) VALUES ( ?, ?, ?)'
                 self.cur.execute(cmd, (project_id, date, self.process_time))
-                printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
+                printout = f'{intro} NEW ENTRY: {project_id} {now} --> {self.process_time}'
             self.conn.commit()
             self.zero_timers()
             print(printout)
@@ -203,7 +201,7 @@ class Tracker:
                 self.window_id_validity_test()
                 self.interrupt_time = 0
                 self.write_sql()
-                print(f"INTERRUPT{now}")
+                print(f"INTERRUPT AT {now}")
                 self.project_info_updater()
                 # else:
                 #     self.zero_timers()
@@ -214,7 +212,7 @@ class Tracker:
             self.refresh_project_folder_content()
         self.elapsed_time += 1
         self.inactive_time += 1
-        print(self.inactive_time)
+        print(f"inactive time: {self.inactive_time}")
         print(f"project tracked: {self.current_id_tracked}")
 
 
@@ -275,7 +273,7 @@ class Tracker:
 
     def interrupt_test(self):
         window_id = self.parsed_title_info().get("ID", 0)
-        # print(window_id)
+
         if int(self.current_id_tracked) != int(window_id):
             return True
         else:
@@ -306,7 +304,9 @@ class Tracker:
         """keys: ID, TEXT, SCORE"""
         result = {}
         window_title = self.get_title()
+
         id = re.findall(r'\d+', window_title)
+
         if id:
             wid = id[0]
         else:
@@ -315,7 +315,7 @@ class Tracker:
         result.update({"TEXT": [i.lower() for i in re.findall(r"[A-Za-z]+", window_title)]})
 
         project_text = self.proj_info.get(wid)
-        # print(project_text)
+
         if project_text:
             for i in project_text:
                 for j in result["TEXT"]:
