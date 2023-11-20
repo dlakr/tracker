@@ -70,31 +70,6 @@ def release_lock():
         locker_mac.release(lock_file_path)
 
 
-def survey_project_folder_old():
-    match = r"[A-Za-z\d]+"
-    parts = []
-    proj_num = []
-    proj_text = []
-    projects = {}
-    for i in folders:
-        info = re.findall(match, i)
-        num = info.pop(0)
-        parts.reverse()
-        data = {num: info}
-        projects.update(data)
-        try:
-            proj_num.append(str(int(num)))
-        except ValueError as error:
-            pass
-        for j in info:
-            if j.lower() not in proj_text:
-                proj_text.append(j.lower())
-    proj_text.sort()
-    proj_num.sort(reverse=True)
-    proj_info = (proj_num, proj_text)
-    return proj_info
-
-
 def survey_project_folder():
     match = r"[A-Za-z\d]+"
     parts = []
@@ -265,6 +240,9 @@ class Tracker:
             return False
 
     def interrupt_delay_test(self):
+        if self.window_id_validity_test():
+            if self.interrupt_time >= interrupt_delay * 10:
+                return True
         if self.interrupt_time >= interrupt_delay * 60:
             return True
         else:
