@@ -1,20 +1,26 @@
 #!C:\Users\py_venv\venv_ttracker\Scripts\python.exe
 from os import listdir
+import git
 import os
 import platform
-import report as r
+# import report as r
 from pynput import mouse, keyboard
 import sqlite3
 import logging
 import time
-from PRINT_LINK import write_log
-from PRINT_LINK import write
+from helpers.logging import redirect_to_file
 import socket
 from datetime import datetime
 import atexit
 import re
 import threading
+git_dirs = ["https://github.com/dlakr/HELPERS.git"]
+for git_dir in git_dirs:
+    g = git.cmd.Git(git_dir)
+    g.pull()
 
+
+tt_logging = redirect_to_file('tt-log.log')
 
 def get_os():
     system = platform.system()
@@ -49,7 +55,8 @@ else:
 
 folders = projects + archive
 now = datetime.now()
-write_log(f'monitoring started at {now}')
+
+print(f'monitoring started at {now}')
 
 
 def acquire_lock():
@@ -160,14 +167,14 @@ class Tracker:
                 printout = f'{intro} NEW ENTRY: {project_id} {date} --> {self.process_time}'
             self.conn.commit()
             self.zero_timers()
-            # write_log(printout)
+            print(printout)
 
 
     def timer_manager(self):
         self.process_time += 1
         if self.process_commit_interval_test():
             self.write_sql()
-            write(f'INTERVAL')
+            print(f'INTERVAL')
         if self.inactive_cap_test():
             self.inactive_triggered()
             self.process_time -= 1
@@ -177,7 +184,7 @@ class Tracker:
                 self.window_id_validity_test()
                 self.interrupt_time = 0
                 self.write_sql()
-                write(f"INTERRUPT")
+                print(f"INTERRUPT")
                 self.project_info_updater()
                 # else:
                 #     self.zero_timers()
@@ -214,7 +221,7 @@ class Tracker:
     def inactive_triggered(self):
         if self.process_time > 1:
             self.write_sql()
-            write(f"INACTIVE")
+            print(f"INACTIVE")
         else:
             self.current_project = ''
             self.current_id_tracked = 0
@@ -304,7 +311,7 @@ class Tracker:
         return result
 
     def track(self):
-            r.report()
+            # r.report()
             self.timer_manager()
 
     def closing(self):
@@ -326,7 +333,7 @@ if __name__ == '__main__':
 
     except Exception as argument:
         logging.exception("Error occured while executing Time tracker")
-        write_log(argument)
+        print(argument)
 
 
 

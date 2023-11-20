@@ -1,7 +1,7 @@
 import portalocker
 import datetime
 import socket
-from PRINT_LINK import write_log
+# from PRINT_LINK import write_log
 # c_name = socket.gethostname()
 # log_file = f"ttracker-{c_name}.log"
 
@@ -15,7 +15,7 @@ def acquire(lock_file_path):
             portalocker.lock(lockfile, portalocker.LOCK_EX | portalocker.LOCK_NB)
         except IOError:
             now = datetime.today().date()
-            write_log(f"{now} - Another instance is running")
+            print(f"{now} - Another instance is running")
             quit()
 
 def release(lock_file_path):
